@@ -2,7 +2,6 @@ let channelName = "HAchubby";
 let DEBUG = false;
 
 const providers = ["Twitch", "7TV", "BTTV", "FFZ"];
-
 const providerIds = {
 	"Twitch": 0,
 	"_7TV": 1,
