@@ -212,6 +212,8 @@ let Channel = {
 	loadFfzEmotes: async function() {
 		DEBUG && console.log("[BTTV/FFZ] Loading emotes...");
 
+		DEBUG && console.log("Loading FFZ emotes...");
+		// Load FFZ emotes
 		const ffzEndpoints = [];
 		if(urlParameters.globalFfzEmotes.value) {
 			ffzEndpoints.push("emotes/global");
@@ -280,11 +282,16 @@ let Channel = {
 					return;
 				}
 
-				const imageUrl = `https://cdn.betterttv.net/emote/${emote.id}/3x`;
-
-				Channel.info.emotes.push(imageUrl);
-
-				DEBUG && console.log(`[BTTV${globalString}] ${emote.code}: ${imageUrl}`);
+				if(urlParameters.bttvEmotes.value) {
+					if(!isGlobal) {
+						Channel.info.emotes.push(`https://cdn.betterttv.net/emote/${emote.id}/3x`);
+					}
+				}
+				else if(urlParameters.globalBttvEmotes.value) {
+					if(isGlobal) {
+						Channel.info.emotes.push(`https://cdn.betterttv.net/emote/${emote.id}/3x`);
+					}
+				}
 			});
 
 			DEBUG && console.log(`[BTTV${globalString}] Done!`);
@@ -296,32 +303,37 @@ let Channel = {
 
 		const _7tvEndpoints = [];
 		if(urlParameters.global7tvEmotes.value) {
-			_7tvEndpoints.push("emotes/global");
+			_7tvEndpoints.push("emote-sets/global");
 		}
 
 		if(urlParameters._7tvEmotes.value) {
-			_7tvEndpoints.push(`users/${encodeURIComponent(Channel.info.id)}/emotes`);
+			_7tvEndpoints.push(`users/twitch/${encodeURIComponent(Channel.info.id)}`);
 		}
 
 		for (const endpoint of _7tvEndpoints) {
-			const json = await getJson(`https://api.7tv.app/v2/${endpoint}`);
+			const json = await getJson(`https://7tv.io/v3/${endpoint}`);
 			
 			if(json.error != undefined) {
 				console.error(`[7TV] ${json.error}`);
 				continue;
 			}
 
-			const isGlobal = endpoint == "emotes/global";
+			const isGlobal = endpoint == "emote-sets/global";
 			const globalString = isGlobal ? "/GLOBAL" : "";
 
-			console.log(json);
+			let emotes = isGlobal ? json.emotes : json.emote_set.emotes;
 
-			json.forEach(emote => {
+			if(emotes === undefined) {
+				DEBUG && console.log(`[7TV${globalString}] Done!`);
+				continue;
+			}
+
+			emotes.forEach(emote => {
 				if(urlParameters.blacklist.value.includes(emote.name)) {
 					return;
 				}
-
-				const imageUrl = emote.urls.slice(-1)[0][1];
+				const host = emote.data.host;
+				const imageUrl = `https:${host.url}/${host.files.slice(-1)[0].name}`;
 
 				Channel.info.emotes.push(imageUrl);
 
@@ -331,24 +343,41 @@ let Channel = {
 			DEBUG && console.log(`[7TV${globalString}] Done!`);
 		}
 	},
-
+	
 	load: async function() {
 		Channel.info.emotes = [];
 
 		await Channel.loadAllEmotes();
+
+		await Channel.initId();
+
 		if(Channel.info.emotes.length == 0) {
-			await Channel.initId();
+			// await Channel.initId();
 
 			if(Channel.info.id != 0) {
 				await Channel.loadTwitchEmotes();
 				await Channel.loadFfzEmotes();
 				await Channel.loadBttvEmotes();
-				await Channel.load7tvEmotes();
+				// await Channel.load7tvEmotes();
 			}
+		}
+
+		if(Channel.info.id != 0) {
+			await Channel.load7tvEmotes();
 		}
 
 		DEBUG && console.log("Loading emotes: done!");
 		DEBUG && console.log(Channel.info.emotes);
+
+		dvd({
+			speed: 100 * urlParameters.speed.value,
+			bumpEdge: function () {
+				if(Channel.info.emotes.length > 0) {
+					const emoteUrl = Channel.info.emotes[Math.floor(Math.random() * Channel.info.emotes.length)];
+					document.querySelector(".daphO").src = emoteUrl;
+				}
+			},
+		});
 	},
 
 	init: function(channelName) {
@@ -489,7 +518,6 @@ function dvd(option) {
 	if (settings.horizontal) {
 		move.right();
 	}
-
 	if (settings.vertical) {
 		move.down();
 	}
@@ -562,14 +590,4 @@ function getParameters() {
 onReady(() => { 
 	getParameters();
 	Channel.init(channelName);
-});
-
-dvd({
-	speed: 100 * urlParameters.speed.value,
-	bumpEdge: function () {
-		if(Channel.info.emotes.length > 0) {
-			const emoteUrl = Channel.info.emotes[Math.floor(Math.random() * Channel.info.emotes.length)];
-			document.querySelector(".daphO").src = emoteUrl;
-		}
-	},
 });
