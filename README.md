@@ -18,7 +18,7 @@
 		<img alt="Pull Requests Closed" src="https://custom-icon-badges.demolab.com/github/issues-pr-closed/greencomfytea/dvd-overlay?logo=git-pull-request-closed" />
 	</a>
 	<br>
-	<a href="https://github.com/greencomfytea/dvd-overlay/blob/main/LICENSE">
+	<a href="">
 		<img alt="License" src="https://custom-icon-badges.demolab.com/github/license/greencomfytea/dvd-overlay?logo=law" />
 	</a>
 	<a href="">
